@@ -7,9 +7,6 @@ on:
         description: "롤백하려는 버전 (미입력 시 backup으로 자동 롤백)"
         required: false
         default: ""
-    branches:
-      - main
-      - dev
 
 jobs:
   guard:
@@ -238,6 +235,7 @@ jobs:
       - name: Notify Discord
         env:
           ENV_NAME: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
+          GUARD_RESULT: ${{ needs.guard.result }}
           PREPARE_RESULT: ${{ needs.prepare.result }}
           PERFORM_RESULT: ${{ needs.perform.result }}
           RELEASE_ID: ${{ inputs.release_id || 'backup' }}
@@ -252,7 +250,10 @@ jobs:
           [ -z "${WEBHOOK:-}" ] && echo "⚠️ DISCORD_WEBHOOK_URL이 공백이므로 본 단계를 스킵합니다." && exit 0
 
           # prepare/perform 결과를 기반으로 최종 성공/실패 결정
-          if [ "${PREPARE_RESULT}" != "success" ]; then
+          if [ "${GUARD_RESULT}" != "success" ]; then
+            FINAL_STATUS="failure"
+            REASON="guard_failed"
+          elif [ "${PREPARE_RESULT}" != "success" ]; then
             FINAL_STATUS="failure"
             REASON="prepare_failed"
           elif [ "${PERFORM_RESULT}" != "success" ]; then
