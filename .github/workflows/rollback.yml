@@ -175,6 +175,9 @@ jobs:
         run: |
           set -euo pipefail
 
+          # WEBHOOK 없으면 스텝 종료
+          [ -z "${WEBHOOK:-}" ] && echo "⚠️ DISCORD_WEBHOOK_URL이 공백이므로 본 단계를 스킵합니다." && exit 0
+
           if [ "$JOB_STATUS" = "success" ]; then
             TITLE="✅ [FE] Rollback Success"
             COLOR=5763719
@@ -183,7 +186,7 @@ jobs:
             COLOR=15548997
           fi
 
-          curl -H "Content-Type: application/json" \
+          curl -sS -H "Content-Type: application/json" \
             -d "{
               \"embeds\": [{
                 \"title\": \"$TITLE\",
@@ -197,4 +200,4 @@ jobs:
                 \"timestamp\": \"$STARTED_AT\"
               }]
             }" \
-            "$WEBHOOK"
+            "$WEBHOOK" || true
