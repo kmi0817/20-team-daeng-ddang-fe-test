@@ -22,7 +22,7 @@ jobs:
       - name: Print inputs
         run: |
           echo "environment=$ENV_NAME"
-          echo "release_id=${{ inputs.release_id }}"
+          echo "release_id=${{ inputs.release_id || 'backup' }}"
 
       - name: Checkout
         uses: actions/checkout@v4
