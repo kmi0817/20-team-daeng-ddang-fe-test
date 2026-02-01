@@ -3,10 +3,6 @@ name: FE Rollback
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        type: choice
-        options: [dev, prod]
-        required: true
       release_id:
         description: "롤백하려는 버전 (미입력 시 backup으로 자동 롤백)"
         required: false
@@ -15,13 +11,17 @@ on:
 jobs:
   rollback:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
+    environment: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
+    env:
+      ENV_NAME: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
     timeout-minutes: 15
+
+    if: ${{ github.ref_name == 'dev' || github.ref_name == 'main' }}
 
     steps:
       - name: Print inputs
         run: |
-          echo "environment=${{ inputs.environment }}"
+          echo "environment=$ENV_NAME"
           echo "release_id=${{ inputs.release_id }}"
 
       - name: Checkout
@@ -38,7 +38,8 @@ jobs:
           port: ${{ secrets.EC2_PORT }}
           script: |
             set -euo pipefail
-            echo "🌐 ${{ inputs.environment }} 서버에서 ${{ inputs.release_id }}로 롤백을 진행합니다."
+            ENV_NAME='${{ env.ENV_NAME }}'
+            echo "🌐 $ENV_NAME 서버에서 ${{ inputs.release_id }}로 롤백을 진행합니다."
 
       # 2) release_id 없으면 backup 링크로 롤백
       - name: Rollback to backup link
@@ -53,7 +54,8 @@ jobs:
           script: |
             set -euo pipefail
 
-            echo "🌐 ${{ inputs.environment }} 서버에서 Backup으로 롤백을 진행합니다."
+            ENV_NAME='${{ env.ENV_NAME }}'
+            echo "🌐 $ENV_NAME 서버에서 Backup으로 롤백을 진행합니다."
 
             # === 설정 변수 ===
             FRONTEND_DIR="${{ secrets.FRONTEND_DIR }}"
